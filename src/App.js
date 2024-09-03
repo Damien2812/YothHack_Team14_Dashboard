@@ -16,8 +16,12 @@ function App() {
     const unsubscribeGivers = onSnapshot(
       collection(db, 'givers'),
       (snapshot) => {
+        console.log('Givers snapshot fetched:', snapshot); // Log the snapshot to debug
         const giversData = snapshot.docs.map(doc => {
           const data = doc.data();
+          console.log('Giver document data:', data); // Log raw data for each document
+
+          // Handle Firestore timestamp
           const formattedDate = formatTimestamp(data.timestamp);
 
           return {
@@ -26,6 +30,7 @@ function App() {
             formattedDate
           };
         });
+        console.log('Givers data processed:', giversData);
         setData(prevData => ({ ...prevData, givers: giversData }));
       },
       (error) => {
@@ -36,8 +41,12 @@ function App() {
     const unsubscribeTakers = onSnapshot(
       collection(db, 'takers'),
       (snapshot) => {
+        console.log('Takers snapshot fetched:', snapshot); // Log the snapshot to debug
         const takersData = snapshot.docs.map(doc => {
           const data = doc.data();
+          console.log('Taker document data:', data); // Log raw data for each document
+
+          // Handle Firestore timestamp
           const formattedDate = formatTimestamp(data.timestamp);
 
           return {
@@ -46,6 +55,7 @@ function App() {
             formattedDate
           };
         });
+        console.log('Takers data processed:', takersData);
         setData(prevData => ({ ...prevData, takers: takersData }));
       },
       (error) => {
@@ -76,6 +86,7 @@ function App() {
         second: 'numeric'
       });
     } else {
+      console.error('Timestamp field missing or invalid:', timestamp);
       return 'Invalid timestamp';
     }
   }
