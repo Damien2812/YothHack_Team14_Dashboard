@@ -6,20 +6,18 @@ function App() {
   const [data, setData] = useState({
     givers: [],
     takers: [],
-    volunteers: [], // If you have volunteers collection data, include it here.
+    deliverers: [],
+    deliveries: [],
   });
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5; // Adjust this to the number of items you want per page
 
   useEffect(() => {
     const unsubscribeGivers = onSnapshot(
       collection(db, 'givers'),
       (snapshot) => {
-        console.log('Givers snapshot fetched:', snapshot); // Log the snapshot to debug
-
         const giversData = snapshot.docs.map(doc => {
           const data = doc.data();
-          console.log('Giver document data:', data); // Log raw data for each document
-
-          // Handle Firestore timestamp
           const formattedDate = formatTimestamp(data.timestamp);
 
           return {
@@ -28,8 +26,6 @@ function App() {
             formattedDate
           };
         });
-
-        console.log('Givers data processed:', giversData);
         setData(prevData => ({ ...prevData, givers: giversData }));
       },
       (error) => {
@@ -40,13 +36,8 @@ function App() {
     const unsubscribeTakers = onSnapshot(
       collection(db, 'takers'),
       (snapshot) => {
-        console.log('Takers snapshot fetched:', snapshot); // Log the snapshot to debug
-
         const takersData = snapshot.docs.map(doc => {
           const data = doc.data();
-          console.log('Taker document data:', data); // Log raw data for each document
-
-          // Handle Firestore timestamp
           const formattedDate = formatTimestamp(data.timestamp);
 
           return {
@@ -55,8 +46,6 @@ function App() {
             formattedDate
           };
         });
-
-        console.log('Takers data processed:', takersData);
         setData(prevData => ({ ...prevData, takers: takersData }));
       },
       (error) => {
@@ -71,15 +60,14 @@ function App() {
     };
   }, []);
 
-  // Utility function to format Firestore timestamp
   function formatTimestamp(timestamp) {
     if (timestamp && timestamp.seconds !== undefined) {
       const seconds = timestamp.seconds;
       const nanoseconds = timestamp.nanoseconds || 0;
-      const date = new Date(seconds * 1000 + nanoseconds / 1000000); // Convert to milliseconds
+      const date = new Date(seconds * 1000 + nanoseconds / 1000000);
 
       return date.toLocaleString('en-US', {
-        timeZone: 'Asia/Singapore', // Adjust as needed
+        timeZone: 'Asia/Singapore',
         year: 'numeric',
         month: 'long',
         day: 'numeric',
@@ -88,48 +76,132 @@ function App() {
         second: 'numeric'
       });
     } else {
-      console.error('Timestamp field missing or invalid:', timestamp);
       return 'Invalid timestamp';
     }
   }
 
+  // Calculate the data to display based on the current page
+  const paginate = (items) => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return items.slice(startIndex, endIndex);
+  };
+
+  const handlePageChange = (newPage) => {
+    setCurrentPage(newPage);
+  };
+
   return (
-    <div>
-      <h1>Givers</h1>
-      <ul>
-        {data.givers.map(giver => (
-          <li key={giver.id}>
-            Name: {giver.name} - 
-            Cooked: {giver.cooked ? 'Yes' : 'No'} - 
-            Diet Type: {giver['diet-type']} - 
-            Exp Date: {formatTimestamp(giver.expdate)} - 
-            Type: {giver.type} - 
-            Formatted Date: {giver.formattedDate}
-          </li>
-        ))}
-      </ul>
-      
-      <h1>Takers</h1>
-      <ul>
-        {data.takers.map(taker => (
-          <li key={taker.id}>
-            Name: {taker.nameTaker} - 
-            Diet Req: {taker.dietReq} - 
-            Family Pax: {taker.familyPax} - 
-            House Income: ${taker.houseIncome} - 
-            Plan Type: {taker.planType} - 
-            Formatted Date: {taker.formattedDate}
-          </li>
-        ))}
-      </ul>
-      
-      <ul>
-        {data.volunteers.map(volunteer => (
-          <li key={volunteer.id}>
-            {volunteer.name} - {volunteer.formattedDate}
-          </li>
-        ))}
-      </ul>
+    <div className='bg-white'>
+      <div className='flex flex-row justify-center gap-20'>
+        {/* Givers */}
+        <div className='w-[300px] ml-8'>
+          <h1 className='text-[28px] mt-5 mb-5 border border-2 border-black rounded-[10px] text-center'>Givers</h1>
+          <ul>
+            {paginate(data.givers).map(giver => (
+              <li key={giver.id} className='border border-green-400 border-2 rounded-[10px] mt-5 mb-5 p-5 '>
+                <li>Name: {giver.name}</li>
+                <li>Cooked: {giver.cooked ? 'Yes' : 'No'}</li> 
+                <li>Diet Type: {giver['diet-type']}</li>
+                <li>Exp Date: {formatTimestamp(giver.expdate)}</li>
+                <li>Type: {giver.type}</li>
+                <li>Formatted Date: {giver.formattedDate}</li>
+              </li>
+            ))}
+          </ul>
+          {/* Pagination Controls */}
+          <div className="flex justify-center">
+            {Array(Math.ceil(data.givers.length / itemsPerPage)).fill().map((_, index) => (
+              <button
+                key={index}
+                onClick={() => handlePageChange(index + 1)}
+                className={`px-3 py-1 border ${index + 1 === currentPage ? 'bg-gray-300' : ''}`}
+              >
+                {index + 1}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Similar structure for Takers, Deliverers, Deliveries */}
+        <div className='w-[300px]'>
+          <h1 className='text-[28px] mt-5 mb-5 border border-2 border-black rounded-[10px] text-center'>Takers</h1>
+          <ul>
+            {paginate(data.takers).map(taker => (
+              <li key={taker.id} className='border border-red-400 border-2 rounded-[10px] mt-5 mb-5 p-5 '>
+                <li>Name: {taker.nameTaker}</li>
+                <li>Diet Req: {taker.dietReq}</li>
+                <li>Family Pax: {taker.familyPax}</li>
+                <li>House Income: ${taker.houseIncome}</li>
+                <li>Plan Type: {taker.planType}</li>
+                <li>Formatted Date: {taker.formattedDate}</li>
+              </li>
+            ))}
+          </ul>
+          {/* Pagination Controls */}
+          <div className="flex justify-center">
+            {Array(Math.ceil(data.takers.length / itemsPerPage)).fill().map((_, index) => (
+              <button
+                key={index}
+                onClick={() => handlePageChange(index + 1)}
+                className={`px-3 py-1 border ${index + 1 === currentPage ? 'bg-gray-300' : ''}`}
+              >
+                {index + 1}
+              </button>
+            ))}
+          </div>
+        </div>
+        
+        <div className='w-[300px]'>
+          <h1 className='text-[28px] mt-5 mb-5 border border-2 border-black rounded-[10px] text-center'>Deliverers</h1>
+          <ul>
+            {paginate(data.deliverers).map(deliverer => (
+              <li key={deliverer.id} className='border border-red-400 border-2 rounded-[10px] mt-5 mb-5 p-5 '>
+                <li>Name: {deliverer.nameDeliverer}</li>
+                <li>Role: {deliverer.role}</li>
+                <li>Formatted Date: {deliverer.formattedDate}</li>
+              </li>
+            ))}
+          </ul>
+          {/* Pagination Controls */}
+          <div className="flex justify-center">
+            {Array(Math.ceil(data.deliverers.length / itemsPerPage)).fill().map((_, index) => (
+              <button
+                key={index}
+                onClick={() => handlePageChange(index + 1)}
+                className={`px-3 py-1 border ${index + 1 === currentPage ? 'bg-gray-300' : ''}`}
+              >
+                {index + 1}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className='w-[300px]'>
+          <h1 className='text-[28px] mt-5 mb-5 border border-2 border-black rounded-[10px] text-center'>Deliveries</h1>
+          <ul>
+            {paginate(data.deliveries).map(delivery => (
+              <li key={delivery.id} className='border border-red-400 border-2 rounded-[10px] mt-5 mb-5 p-5 '>
+                <li>Name and Role: {delivery.nameAndRole}</li>
+                <li>Order Summary: {delivery.orderSummary}</li>
+              </li>
+            ))}
+          </ul>
+          {/* Pagination Controls */}
+          <div className="flex justify-center">
+            {Array(Math.ceil(data.deliveries.length / itemsPerPage)).fill().map((_, index) => (
+              <button
+                key={index}
+                onClick={() => handlePageChange(index + 1)}
+                className={`px-3 py-1 border ${index + 1 === currentPage ? 'bg-gray-300' : ''}`}
+              >
+                {index + 1}
+              </button>
+            ))}
+          </div>
+        </div>
+
+      </div>
     </div>
   );
 }
